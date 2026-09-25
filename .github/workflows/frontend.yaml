@@ -54,8 +54,16 @@ jobs:
       - name: Deploy frontend
         working-directory: frontend
         run: |
+          BUCKET_URI="s3://${FRONTEND_BUCKET}"
+
+          echo "Deploying frontend to ${BUCKET_URI}"
+
+          aws s3api head-bucket \
+            --bucket "${FRONTEND_BUCKET}" \
+            --region "${AWS_REGION}"
+
           aws s3 sync dist/ \
-            "s3://$FRONTEND_BUCKET/" \
+            "${BUCKET_URI}/" \
             --delete
 
       - name: Invalidate CloudFront

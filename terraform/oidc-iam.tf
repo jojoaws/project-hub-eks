@@ -180,6 +180,21 @@ resource "aws_iam_policy" "github_actions_deploy" {
       },
 
       {
+        Sid    = "ReadProjectHubSecrets"
+        Effect = "Allow"
+
+        Action = [
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:GetSecretValue"
+        ]
+
+        Resource = [
+          aws_secretsmanager_secret.jwt.arn,
+          "${aws_db_instance.postgres.master_user_secret[0].secret_arn}*"
+        ]
+      },
+
+      {
         Sid    = "UploadFrontend"
         Effect = "Allow"
 
@@ -232,6 +247,10 @@ resource "aws_eks_access_entry" "github_actions_deploy" {
   cluster_name  = module.eks.cluster_name
   principal_arn = aws_iam_role.github_actions_deploy.arn
   type          = "STANDARD"
+
+  kubernetes_groups = [
+    "project-hub-deployer"
+  ]
 }
 
 resource "aws_eks_access_policy_association" "github_actions_deploy" {
