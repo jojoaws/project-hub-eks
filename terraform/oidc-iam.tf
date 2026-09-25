@@ -1,3 +1,105 @@
+resource "aws_iam_role" "github_actions_terraform" {
+  name        = "${var.project_name}-github-actions-terraform"
+  description = "GitHub Actions Terraform CI role for the Project Hub infrastructure."
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Principal = {
+          Federated = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"
+        }
+
+        Action = "sts:AssumeRoleWithWebIdentity"
+
+        Condition = {
+          StringEquals = {
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          }
+
+          StringLike = {
+            "token.actions.githubusercontent.com:sub" = [
+              "repo:jojoaws/project-hub-eks:ref:refs/heads/main",
+              "repo:jojoaws/project-hub-eks:pull_request"
+            ]
+          }
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name        = "${var.project_name}-github-actions-terraform"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "aws_iam_policy" "github_actions_terraform_state" {
+  name        = "${var.project_name}-github-actions-terraform-state"
+  description = "Access to the Project Hub Terraform state in S3."
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Sid    = "ListTerraformState"
+        Effect = "Allow"
+
+        Action = [
+          "s3:ListBucket"
+        ]
+
+        Resource = "arn:aws:s3:::cloud-mastery-tfstate-bucket-005008919446"
+
+        Condition = {
+          StringLike = {
+            "s3:prefix" = [
+              "project-hub-eks/*"
+            ]
+          }
+        }
+      },
+
+      {
+        Sid    = "ManageTerraformState"
+        Effect = "Allow"
+
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ]
+
+        Resource = [
+          "arn:aws:s3:::cloud-mastery-tfstate-bucket-005008919446/project-hub-eks/terraform.tfstate",
+          "arn:aws:s3:::cloud-mastery-tfstate-bucket-005008919446/project-hub-eks/terraform.tfstate.tflock"
+        ]
+      }
+    ]
+  })
+
+  tags = {
+    Name        = "${var.project_name}-github-actions-terraform-state"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "github_actions_terraform_read_only" {
+  role       = aws_iam_role.github_actions_terraform.name
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "github_actions_terraform_state" {
+  role       = aws_iam_role.github_actions_terraform.name
+  policy_arn = aws_iam_policy.github_actions_terraform_state.arn
+}
+
 resource "aws_iam_role" "github_actions_deploy" {
   name        = "${var.project_name}-github-actions-deploy"
   description = "GitHub Actions deployment role for the Project Hub application."

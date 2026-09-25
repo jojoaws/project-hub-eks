@@ -13,11 +13,15 @@ on:
 
 permissions:
   contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  AWS_TERRAFORM_ROLE_ARN: ${{ vars.AWS_TERRAFORM_ROLE_ARN }}
 
 jobs:
-
-  validate:
-    name: Validate Terraform
+  plan:
+    name: Terraform Plan
     runs-on: ubuntu-latest
 
     defaults:
@@ -25,7 +29,6 @@ jobs:
         working-directory: terraform
 
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v6
 
@@ -37,8 +40,17 @@ jobs:
       - name: Check Terraform formatting
         run: terraform fmt -check -recursive
 
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_TERRAFORM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Initialize Terraform
-        run: terraform init -backend=false
+        run: terraform init
 
       - name: Validate Terraform
         run: terraform validate
+
+      - name: Terraform plan
+        run: terraform plan -no-color
