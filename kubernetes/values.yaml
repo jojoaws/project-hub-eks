@@ -1,0 +1,120 @@
+application:
+  name: project-hub-eks
+
+  namespace: project-hub-eks-app
+
+image:
+  repository: "005008919446.dkr.ecr.us-east-1.amazonaws.com/project-hub-eks-backend"
+  pullPolicy: IfNotPresent
+
+container:
+  port: 8000
+
+service:
+  type: ClusterIP
+  port: 8000
+
+replicaCount: 2
+
+deployment:
+  strategy:
+    type: RollingUpdate
+
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 0
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+
+  minReplicas: 2
+  maxReplicas: 5
+
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+config:
+  jwtExpireMinutes: "30"
+  awsRegion: "us-east-1"
+  s3BucketName: "project-hub-eks-frontend-005008919446"
+  snsTopicArn: "arn:aws:s3:::project-hub-eks-frontend-005008919446"
+
+  database:
+    host: "project-hub-eks-postgres.cqj4i6saex16.us-east-1.rds.amazonaws.com"
+    port: "5432"
+    name: "projecthubdb"
+
+secret:
+  name: project-hub-eks-backend-secret
+
+  aws: 
+    jwt:
+      name: project-hub-eks/jwt
+
+    database:
+      name: "rds!db-604c172a-5d71-41e0-bf72-bc7887b5b52e"
+
+health:
+  path: /health
+
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+    successThreshold: 1
+
+  liveness:
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 2
+    failureThreshold: 3
+    successThreshold: 1
+
+  startup:
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 30
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+serviceAccount:
+  create: true
+  name: project-hub-eks-backend
+
+ingress:
+  enabled: true
+
+  className: alb
+
+  scheme: internet-facing
+
+  targetType: ip
+
+  healthcheckPath: /health
+
+networkPolicy:
+  enabled: true
+
+migration:
+  enabled: true
+  backoffLimit: 3

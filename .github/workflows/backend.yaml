@@ -1,0 +1,86 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - "kubernetes/**"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+  AWS_DEPLOY_ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+
+jobs:
+
+  deploy:
+    name: Build and Deploy Backend
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2.1.6
+
+      - name: Build and push backend image
+        working-directory: backend
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity \
+            --query Account \
+            --output text)
+
+          ECR_REGISTRY="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+          docker build \
+            -t "$ECR_REGISTRY/$ECR_REPOSITORY:${GITHUB_SHA}" \
+            .
+
+          docker push \
+            "$ECR_REGISTRY/$ECR_REPOSITORY:${GITHUB_SHA}"
+
+      - name: Get image digest
+        id: image
+        run: |
+          DIGEST=$(aws ecr describe-images \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-ids imageTag="$GITHUB_SHA" \
+            --query 'imageDetails[0].imageDigest' \
+            --output text)
+
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+
+      - name: Configure kubectl
+        run: |
+          aws eks update-kubeconfig \
+            --region "$AWS_REGION" \
+            --name "$EKS_CLUSTER_NAME"
+
+      - name: Deploy backend
+        working-directory: kubernetes
+        run: |
+          helm upgrade project-hub-eks . \
+            --namespace project-hub-eks-app \
+            --set image.digest="${{ steps.image.outputs.digest }}"
+
+      - name: Verify backend rollout
+        run: |
+          kubectl rollout status \
+            deployment/project-hub-eks-backend \
+            --namespace project-hub-eks-app \
+            --timeout=5m

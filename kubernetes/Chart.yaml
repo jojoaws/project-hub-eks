@@ -1,0 +1,6 @@
+apiVersion: v2
+name: project-hub-eks
+description: Production-grade Helm chart for the Project Hub EKS application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
