@@ -159,6 +159,7 @@ resource "aws_iam_policy" "github_actions_deploy" {
         Action = [
           "ecr:BatchCheckLayerAvailability",
           "ecr:CompleteLayerUpload",
+          "ecr:DescribeImages",
           "ecr:InitiateLayerUpload",
           "ecr:PutImage",
           "ecr:UploadLayerPart"
