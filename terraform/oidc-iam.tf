@@ -18,12 +18,10 @@ resource "aws_iam_role" "github_actions_terraform" {
         Condition = {
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          }
 
-          StringLike = {
             "token.actions.githubusercontent.com:sub" = [
-              "repo:jojoaws/project-hub-eks:ref:refs/heads/main",
-              "repo:jojoaws/project-hub-eks:pull_request"
+              "repo:jojoaws@278461269/project-hub-eks@1382609740:ref:refs/heads/main",
+              "repo:jojoaws@278461269/project-hub-eks@1382609740:pull_request"
             ]
           }
         }
@@ -120,10 +118,8 @@ resource "aws_iam_role" "github_actions_deploy" {
         Condition = {
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          }
 
-          StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:jojoaws/project-hub-eks:ref:refs/heads/main"
+            "token.actions.githubusercontent.com:sub" = "repo:jojoaws@278461269/project-hub-eks@1382609740:ref:refs/heads/main"
           }
         }
       }
@@ -247,6 +243,7 @@ resource "aws_eks_access_policy_association" "github_actions_deploy" {
     type       = "namespace"
     namespaces = ["project-hub-eks-app"]
   }
+
   depends_on = [
     aws_eks_access_entry.github_actions_deploy
   ]
