@@ -38,7 +38,7 @@ resource "aws_iam_role" "github_actions_terraform" {
 
 resource "aws_iam_policy" "github_actions_terraform_state" {
   name        = "${var.project_name}-github-actions-terraform-state"
-  description = "Access to the Project Hub Terraform state in S3."
+  description = "Access to the Project Hub Terraform state."
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -76,6 +76,21 @@ resource "aws_iam_policy" "github_actions_terraform_state" {
         Resource = [
           "arn:aws:s3:::cloud-mastery-tfstate-bucket-005008919446/project-hub-eks/terraform.tfstate",
           "arn:aws:s3:::cloud-mastery-tfstate-bucket-005008919446/project-hub-eks/terraform.tfstate.tflock"
+        ]
+      },
+
+      {
+        Sid    = "ReadProjectHubSecrets"
+        Effect = "Allow"
+
+        Action = [
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:GetSecretValue"
+        ]
+
+        Resource = [
+          aws_secretsmanager_secret.jwt.arn,
+          "${aws_db_instance.postgres.master_user_secret[0].secret_arn}*"
         ]
       }
     ]
@@ -177,21 +192,6 @@ resource "aws_iam_policy" "github_actions_deploy" {
         ]
 
         Resource = module.eks.cluster_arn
-      },
-
-      {
-        Sid    = "ReadProjectHubSecrets"
-        Effect = "Allow"
-
-        Action = [
-          "secretsmanager:DescribeSecret",
-          "secretsmanager:GetSecretValue"
-        ]
-
-        Resource = [
-          aws_secretsmanager_secret.jwt.arn,
-          "${aws_db_instance.postgres.master_user_secret[0].secret_arn}*"
-        ]
       },
 
       {

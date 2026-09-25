@@ -54,6 +54,7 @@ jobs:
       - name: Deploy frontend
         working-directory: frontend
         run: |
+          FRONTEND_BUCKET="$(printf '%s' "$FRONTEND_BUCKET" | tr -d '[:space:]')"
           BUCKET_URI="s3://${FRONTEND_BUCKET}"
 
           echo "Deploying frontend to ${BUCKET_URI}"
@@ -62,9 +63,9 @@ jobs:
             --bucket "${FRONTEND_BUCKET}" \
             --region "${AWS_REGION}"
 
-          aws s3 sync dist/ \
-            "${BUCKET_URI}/" \
-            --delete
+         aws s3 sync dist/ \
+           "${BUCKET_URI}/" \
+           --delete
 
       - name: Invalidate CloudFront
         run: |
