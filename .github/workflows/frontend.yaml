@@ -63,9 +63,9 @@ jobs:
             --bucket "${FRONTEND_BUCKET}" \
             --region "${AWS_REGION}"
 
-         aws s3 sync dist/ \
-           "${BUCKET_URI}/" \
-           --delete
+          aws s3 sync dist/ \
+            "${BUCKET_URI}/" \
+            --delete
 
       - name: Invalidate CloudFront
         run: |
