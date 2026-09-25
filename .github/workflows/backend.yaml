@@ -8,6 +8,8 @@ on:
       - "backend/**"
       - "kubernetes/**"
 
+  workflow_dispatch:
+
 permissions:
   contents: read
   id-token: write
