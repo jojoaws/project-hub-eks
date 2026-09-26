@@ -7,6 +7,11 @@ metadata:
     app.kubernetes.io/name: {{ .Values.application.name }}
     app.kubernetes.io/component: backend
 
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "8000"
+
 spec:
   type: {{ .Values.service.type }}
 

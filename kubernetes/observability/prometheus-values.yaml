@@ -15,7 +15,19 @@ server:
     enabled: false
 
 alertmanager:
-  enabled: false
+  enabled: true
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+
+  persistence:
+    enabled: false 
 
 prometheus-pushgateway:
   enabled: false
