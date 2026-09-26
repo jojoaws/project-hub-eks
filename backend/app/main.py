@@ -12,12 +12,20 @@ from app.api import user
 
 from fastapi.middleware.cors import CORSMiddleware
 
+from prometheus_fastapi_instrumentator import Instrumentator
+
 init_db()
 
 app = FastAPI(
     title="ProjectHub API",
     version="1.0.0",
     root_path="/api"
+)
+
+Instrumentator().instrument(app).expose(
+    app,
+    endpoint="/metrics",
+    include_in_schema=False
 )
 
 app.add_middleware(
